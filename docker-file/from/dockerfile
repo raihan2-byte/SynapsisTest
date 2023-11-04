@@ -1,0 +1,14 @@
+# Menggunakan image Alpine Linux sebagai base image
+FROM golang:alpine
+
+# Mengatur direktori kerja di dalam kontainer
+WORKDIR /app
+
+# Menyalin file-file aplikasi Go ke dalam kontainer
+COPY . .
+
+# Mengkompilasi aplikasi Go
+RUN go build -o main .
+
+# Menjalankan aplikasi Go ketika kontainer dimulai
+CMD ["./main"]
