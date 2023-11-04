@@ -1,1 +1,2 @@
-web: ./bin/golang-gin-poc
+web: bin/assesment-test-backend
+

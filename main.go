@@ -17,15 +17,29 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
 func main() {
-	dsn := "root:@tcp(127.0.0.1:3306)/synapsis_id?charset=utf8mb4&parseTime=True&loc=Local"
+
+	if _, exists := os.LookupEnv("RAILWAY_ENVIRONMENT"); exists == false {
+		if err := godotenv.Load(); err != nil {
+			log.Fatal("error loading .env file:", err)
+		}
+	}
+
+	dbUsername := os.Getenv("MYSQLUSER")
+	dbPassword := os.Getenv("MYSQLPASSWORD")
+	dbHost := os.Getenv("MYSQLHOST")
+	dbPort := os.Getenv("MYSQLPORT")
+	dbName := os.Getenv("MYSQLDATABASE")
+
+	dsn := dbUsername + ":" + dbPassword + "@tcp(" + dbHost + ":" + dbPort + ")/" + dbName + "?charset=utf8mb4&parseTime=True&loc=Local"
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal("Db Connestion Error")
+		log.Fatal("DB Connection Error")
 	}
 
 	db.AutoMigrate(
@@ -114,8 +128,10 @@ func main() {
 
 	router.GET("/transaction-details", authMiddleware(authService, userService), authRole(authService, userService), transactionDetailsHandler.GetAllTransactionDetails )
 
-	port := os.Getenv("PORT")
-	router.Run(":" + port)
+	
+
+	//tambah request body aja di postman gitu
+	router.Run(":8000")
 
 }
 
