@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"synapsisid/auth"
 	"synapsisid/cart"
@@ -36,28 +37,39 @@ func main() {
 		&transactiondetail.TransactionDetails{},
 	)
 
+	//user
 	userRepository := user.NewRepository(db)
 	userService := user.NewService(userRepository)
 	authService := auth.NewService()
 	userHandler := handler.NewUserHandler(userService, authService)
+
+	//category
 	categoryRepository := category.NewRepositoryCategory(db)
 	categoryService := category.NewServiceCategory(categoryRepository)
 	categoryHandler := handler.NewCategoryHandler(categoryService)
+
+	//product
 	productRepository := product.NewRepositoryProduct(db)
 	productService := product.NewServiceProduct(productRepository, categoryRepository)
 	productHandler := handler.NewProductHandler(productService)
+
+	//transactionDetails
 	transactionDetailsRepository := transactiondetail.NewRepositoryTransactionDetails(db)
-	// transactionDetailsService := cart.NewServiceTransactionDetails(transactionDetailsRepository, categoryRepository, productRepository, userRepository)
-	// transactionDetailsHandler := handler.NewTransactionDetailsHandler(transactionDetailsService)
+	transactionDetailsService := transactiondetail.NewService(transactionDetailsRepository)
+	transactionDetailsHandler := handler.NewtransactionDetailsHandler(transactionDetailsService)
+
+
+	//transaction
 	transactionRepository := transaction.NewRepositoryTransaction(db)
 	transactionService := transaction.NewService(transactionRepository, productRepository, userRepository, transactionDetailsRepository)
 	transactionHandler := handler.NewtransactionHandler(transactionService)
+
+	//addtocart
 	addToCartRepository := cart.NewRepositoryCart(db)
 	addToCartService := cart.NewServiceCart(addToCartRepository, categoryRepository, productRepository, userRepository, transactionDetailsRepository, transactionRepository)
 	cartHandler := handler.NewAddToCartHandler(addToCartService)
 
-	transactionDetailsService := transactiondetail.NewService(transactionDetailsRepository)
-	transactionDetailsHandler := handler.NewtransactionDetailsHandler(transactionDetailsService)
+
 
 	router := gin.Default()
 	api := router.Group("/users")
@@ -67,18 +79,19 @@ func main() {
 	api5 := router.Group("/cart")
 	
 
-
-
+	//user
 	api.POST("/register", userHandler.RegisterUser)
 	api.POST("/login", userHandler.Login)
 	api.PATCH("/topup", authMiddleware(authService, userService), userHandler.UpdatedUser)
 	
+	//category
 	api2.POST("/", authMiddleware(authService, userService), authRole(authService, userService), categoryHandler.CreateCategory)
 	api2.GET("/", categoryHandler.GetAllCategory)
 	api2.GET("/:id", categoryHandler.GetCategory)
 	api2.PATCH("/:id", authMiddleware(authService, userService), authRole(authService, userService), categoryHandler.UpdatedCategory)
 	api2.DELETE("/:id", authMiddleware(authService, userService), authRole(authService, userService), categoryHandler.DeletedCategory)
 
+	//product
 	api3.POST("/", authMiddleware(authService, userService), authRole(authService, userService), productHandler.CreateProduct)
 	api3.GET("/:id", authMiddleware(authService, userService), productHandler.GetProduct)
 	api3.GET("/", authMiddleware(authService, userService), productHandler.GetAllProduct)
@@ -86,9 +99,12 @@ func main() {
 	api3.PUT("/:id", authMiddleware(authService, userService), authRole(authService, userService), productHandler.UpdateProduct)
 	api3.DELETE("/:id", authMiddleware(authService, userService), authRole(authService, userService), productHandler.DeleteProduct)
 
+
+	//transaction
 	api4.POST("/:id", authMiddleware(authService, userService),  transactionHandler.CreateTransaction)
 	api4.GET("/", authMiddleware(authService, userService), transactionHandler.GetTransaction)
 
+	//cart
 	api5.POST("/:id", authMiddleware(authService, userService), cartHandler.AddToCart)
 	api5.PUT("/:cartID", authMiddleware(authService, userService), cartHandler.UpdateCart)
 	api5.GET("/", authMiddleware(authService, userService), cartHandler.GetAllChart)
@@ -98,10 +114,8 @@ func main() {
 
 	router.GET("/transaction-details", authMiddleware(authService, userService), authRole(authService, userService), transactionDetailsHandler.GetAllTransactionDetails )
 
-	
-
-	//tambah request body aja di postman gitu
-	router.Run(":8000")
+	port := os.Getenv("PORT")
+	router.Run(":" + port)
 
 }
 
